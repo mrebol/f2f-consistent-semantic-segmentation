@@ -12,8 +12,8 @@ from data.metrics import RunningScore
 from utils import *
 from model.esp_net import ESPNet_L1b
 
-# TODO:  without_gt, requirements.txt, convolutional_lstm.py cleanup, loader function cleanup,  Auto-Coding-Style
-# DONE: tensorboard OK, time_interval_len, find good images results, , check which statistics to use
+# TODO: requirements.txt,  Auto-Coding-Style
+# DONE: tensorboard OK, time_interval_len, find good images results, without_gt, check which statistics to use, convolutional_lstm.py cleanup, loader function cleanup ,
 
 def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_path, save_pred_color=False, save_label_ids=False):
     batch_size = val_loader.batch_size
@@ -47,6 +47,7 @@ def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_pat
         images = images.transpose(0, 1).to(device)  # => TimeStep, BatchSize, ...
         gt = gt[0].numpy()
 
+        # Model prediction
         lstm_states = None
         if lstm_net and (seq_nr_in_scene != 0):
             lstm_states = lstm_states_prev
@@ -57,12 +58,9 @@ def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_pat
             outputs = outputs.transpose(0, 1)
         else:
             outputs = net.forward(images)
-
         prediction = outputs.data.argmax(2).cpu()
         prediction = prediction.reshape(prediction.shape[0]*prediction.shape[1], 1, prediction.shape[2], prediction.shape[3])
         prediction = torch.nn.functional.interpolate(prediction.type(torch.float32), size=val_loader.dataset.full_resolution, mode='nearest').type(torch.uint8)[:,0,:,:].numpy()
-        running_metrics.update(gt, prediction)
-
         if seq_nr_in_scene != 0:  # if not scene start
             prediction_scene = np.concatenate((prediction_prev[None, :, :],prediction))  # stack prev pred here in time dimension
             gt_scene = np.concatenate((gt_prev[None, :, :], gt))
@@ -70,15 +68,18 @@ def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_pat
             prediction_scene = prediction
             gt_scene = gt
 
-        if prediction_scene.shape[0] > 1:  # check if not time_steps = 1 and first sequence
-            consistency_metric.append(running_metrics.get_consistency(gt_scene, prediction_scene))
-            mean_consistency = np.mean(consistency_metric[-1], axis=0)
-            tensorboard.add_scalar('Validation_{}-dataset/Interval-Consistency'.format(dataset_name), mean_consistency, batch_nr)
+        # Compute metrics
+        if gt.shape[2] != 1:
+            running_metrics.update(gt, prediction)
+            if prediction_scene.shape[0] > 1:  # check if not time_steps = 1 and first sequence
+                consistency_metric.append(running_metrics.get_consistency(gt_scene, prediction_scene))
+                mean_consistency = np.mean(consistency_metric[-1], axis=0)
+                tensorboard.add_scalar('Validation_{}-dataset/Interval-Consistency'.format(dataset_name), mean_consistency, batch_nr)
 
-        # Save imgs
+        # Save images
         for t in range(prediction.shape[0]):
             if save_pred_color:
-                Image.fromarray(val_loader.dataset.segmap_to_color(prediction[t], gt[t], True, False), # TODO : False, False if no GT available
+                Image.fromarray(val_loader.dataset.segmap_to_color(prediction[t], gt[t], gt.shape[2] != 1, False),
                     mode='RGB').save(os.path.join(image_save_color_path,
                     "{}.png".format(os.path.splitext(os.path.basename(file_names[t, 0]))[0].replace("leftImg8bit", "pred_color"))))
             if save_label_ids:
@@ -104,10 +105,11 @@ def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_pat
         mean_consistency = np.concatenate(consistency_metric, axis=0).mean(axis=0)
         print("Mean Consistency: {:5.2f}%".format(mean_consistency*100))
         tensorboard.add_scalar("Validation_{}-dataset/Consistency".format(dataset_name,), mean_consistency, batch_nr_training)
-    acc, mean_iou = running_metrics.get_scores()
-    print('Accuracy: {:5.2f}%  mIoU: {:5.2f}%'.format(acc*100,mean_iou*100))
-    tensorboard.add_scalar("Validation_{}-dataset/Accuracy".format(dataset_name), acc, batch_nr_training)
-    tensorboard.add_scalar("Validation_{}-dataset/Mean_IoU".format(dataset_name), mean_iou, batch_nr_training)
+    if val_loader.dataset.split[0] != 'test':
+        acc, mean_iou = running_metrics.get_scores()
+        print('Accuracy: {:5.2f}%  mIoU: {:5.2f}%'.format(acc*100,mean_iou*100))
+        tensorboard.add_scalar("Validation_{}-dataset/Accuracy".format(dataset_name), acc, batch_nr_training)
+        tensorboard.add_scalar("Validation_{}-dataset/Mean_IoU".format(dataset_name), mean_iou, batch_nr_training)
     running_metrics.reset()
     print("Validation on", dataset_name, " dataset finished!")
 

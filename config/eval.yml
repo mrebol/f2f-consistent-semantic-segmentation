@@ -4,14 +4,13 @@ model:
 
 data:
     dataset: data/cityscapes_sequence
-    #dataset: data/test
     splits: val  # test, train, val
     nr_of_scenes: all  # 0,1,2,..,all
     nr_of_sequences: all  # 0,1,2,..,all
-    sequence_length: 1
+    sequence_length: 2
     input_size: [512, 1024]  #  height, width
 
 output:
     save_pred_color: True  # Save segmentation color images
-    save_label_ids: False  # For Cityscapes test submission
+    save_label_ids: True  # For Cityscapes test submission
 

@@ -163,13 +163,13 @@ class CityscapesLoader(data.Dataset):
             files = recursive_glob(rootdir=images_base, suffix=".png")
             files = sorted(files)
 
-            # remove files without labels
-            files_temp = []
-            for i, file in enumerate(files):
-                lbl_path = os.path.join(lbls_base, file.split(os.sep)[-2], os.path.basename(file)[:-15] + "gtFine_labelIds.png")
-                if os.path.isfile(lbl_path):
-                    files_temp.append(file)
-            files = files_temp
+            if split != 'test':  # remove files without labels
+                files_temp = []
+                for i, file in enumerate(files):
+                    lbl_path = os.path.join(lbls_base, file.split(os.sep)[-2], os.path.basename(file)[:-15] + "gtFine_labelIds.png")
+                    if os.path.isfile(lbl_path):
+                        files_temp.append(file)
+                files = files_temp
 
             # create sequence list
             sequences_dataset = []
@@ -256,7 +256,6 @@ class CityscapesLoader(data.Dataset):
             sequence[3] = sequence[4] // self.scene_group_size  # works, because sequence is reference #  4... scene_nr
         self.sequences.sort(key=lambda x: (x[7][1], x[3], x[2], x[4]))  # sort first by train_scale, then by scene_group_nr, then by seq_in_scene, then by scene_nr
 
-
     def shuffle_scenes_of_sequences(self, sequences):
         assert self.scene_group_size > 0
         # shuffle scene_numbers
@@ -290,7 +289,6 @@ class CityscapesLoader(data.Dataset):
         # sort first by train_scale, then by scene_group_nr, then by seq_in_scene, then by scene_nr
         self.sequences.sort(key=lambda x: (x[7][1], x[3], x[2], x[4]))
 
-
     def __len__(self):
         return len(self.sequences)
 
@@ -301,8 +299,11 @@ class CityscapesLoader(data.Dataset):
         for time_step, (img_path, lbl_path) in enumerate(sequence[0]):
             img = Image.open(img_path)
             img = np.array(img, dtype=np.uint8)
-            lbl = Image.open(lbl_path)
-            lbl = self.labelId_to_segmap(np.array(lbl, dtype=np.uint8))
+            if os.path.exists(lbl_path):
+                lbl = Image.open(lbl_path)
+                lbl = self.labelId_to_segmap(np.array(lbl, dtype=np.uint8))
+            else:
+                lbl = np.zeros((1,1))
             img, lbl = self.transform(img, lbl)
             imgs.append(img)
             lbls.append(lbl)
@@ -329,71 +330,22 @@ class CityscapesLoader(data.Dataset):
 
         return img, lbl
 
-    def segmap_to_color(self, temp, gt = None, insert_mask=False, float=True):  # color segmap (0..18)
-        r = temp.copy()
-        g = temp.copy()
-        b = temp.copy()
-        for l in range(0, self.n_classes): # 0 to 18
-            r[temp == l] = self.label_colours[l][0]  # color each channel according to label
-            g[temp == l] = self.label_colours[l][1]
-            b[temp == l] = self.label_colours[l][2]
-        if float:
-            rgb = np.zeros((temp.shape[0], temp.shape[1], 3))
-            rgb[:, :, 0] = r / 255.0
-            rgb[:, :, 1] = g / 255.0
-            rgb[:, :, 2] = b / 255.0
-        else:
-            rgb = np.zeros((temp.shape[0], temp.shape[1], 3), dtype=np.int8)
-            rgb[:, :, 0] = r
-            rgb[:, :, 1] = g
-            rgb[:, :, 2] = b
+    def segmap_to_color(self, segmap, gt=None, insert_mask=False, float_output=True):  # color an input segmap [0..18]
+        rgb = np.zeros((segmap.shape[0], segmap.shape[1], 3), dtype=np.int8)
+        for cl in range(0, self.n_classes):
+            rgb[segmap == cl] = self.label_colours[cl]
+        if float_output:
+            rgb = rgb.astype(np.float)
+            rgb /= 255.0
         if insert_mask:
             rgb[gt == 250] = [0,0,0]
         return rgb
 
     def labelId_to_segmap(self, mask):  # input:7,8,11,...  output: 0,1,2,...
-        for _voidc in self.void_classes:
-            mask[mask == _voidc] = self.ignore_index  # Put all void classes to 250
-        for _validc in self.valid_classes:
-            mask[mask == _validc] = self.class_map[_validc]  # Put all valid classes in range 0..18
-        return mask
-
-    @staticmethod
-    def segmap_to_color_static(segmap):  # color segmap (0..18)  250 becomes 250,250,250
-        r = segmap.copy()
-        g = segmap.copy()
-        b = segmap.copy()
-        for l in range(0, CityscapesLoader.n_classes):  # 0 to 18
-            r[segmap == l] = CityscapesLoader.label_colours[l][0]  # color each channel according to label
-            g[segmap == l] = CityscapesLoader.label_colours[l][1]
-            b[segmap == l] = CityscapesLoader.label_colours[l][2]
-
-        rgb = np.zeros((segmap.shape[0], segmap.shape[1], 3), dtype=np.uint8)
-        rgb[:, :, 0] = r
-        rgb[:, :, 1] = g
-        rgb[:, :, 2] = b
-        return rgb
-
-    @staticmethod
-    def color_to_labelId_static(color):  # height, width, color
-        label = np.zeros((color.shape[0], color.shape[1]), dtype=np.uint8)
-        for i in range(len(CityscapesLoader.valid_classes)):
-            label[ (color == CityscapesLoader.colors[i]).all(axis=2) ] = CityscapesLoader.valid_classes[i]  # .all(axis=2) means RG and B need to be equal
-        return label
-
-    @staticmethod
-    def labelId_to_color_static(labelIds):  # 0 labelId becomes 0,0,0
-        rgb = np.zeros((labelIds.shape[0], labelIds.shape[1], 3), dtype=np.uint8)
-        for i, labelId in enumerate(CityscapesLoader.valid_classes):
-            rgb[labelId == labelIds] = CityscapesLoader.label_colours[i]
-        return rgb
-
-    @staticmethod
-    def labelId_to_segmap_static(mask):  # input:7,8,11,...  output: 0,1,2,...
-        for _voidc in CityscapesLoader.void_classes:
-            mask[mask == _voidc] = CityscapesLoader.ignore_index  # Put all void classes to 250
-        for _validc in CityscapesLoader.valid_classes:
-            mask[mask == _validc] = CityscapesLoader.class_map[_validc]  # Put all valid classses in range 0..18
+        for void_class in self.void_classes:
+            mask[mask == void_class] = self.ignore_index
+        for valid_class in self.valid_classes:
+            mask[mask == valid_class] = self.class_map[valid_class]  # Put all valid classes in range 0..18
         return mask
 
     @staticmethod
