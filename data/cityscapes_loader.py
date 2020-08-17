@@ -1,29 +1,22 @@
-# Copied from https://github.com/meetshah1995/pytorch-semseg/blob/master/ptsemseg/loader/cityscapes_loader.py
 import os
-import numpy as np
-import scipy.misc as m
-from PIL import Image
-from torch.utils import data
 import random
 import re
+
+import numpy as np
 import torch
+from PIL import Image
+from torch.utils import data
 
 from utils import recursive_glob
 
+
 class CityscapesLoader(data.Dataset):
-    """cityscapesLoader
-    https://www.cityscapes-dataset.com
-    Data is derived from CityScapes, and can be downloaded from here:
-    https://www.cityscapes-dataset.com/downloads/
-    Many Thanks to @fvisin for the loader repo:
-    https://github.com/fvisin/dataset_loaders/blob/master/dataset_loaders/images/cityscapes.py
-    """
     ego_vehicle_class_id = 1
-    rectification_border_class_id =  2
+    rectification_border_class_id = 2
     out_of_roi_class_id = 3
 
     colors = [  # [  0,   0,   0],
-        [128, 64, 128], # road = dark-ppurple-pink
+        [128, 64, 128],  # road = dark-ppurple-pink
         [244, 35, 232],
         [70, 70, 70],
         [102, 102, 156],
@@ -42,7 +35,7 @@ class CityscapesLoader(data.Dataset):
         [0, 80, 100],
         [0, 0, 230],
         [119, 11, 32],
-    ]  # cnt=19
+    ]  # len=19
     class_names = [
         "unlabelled",
         "road",  # 0
@@ -64,25 +57,25 @@ class CityscapesLoader(data.Dataset):
         "train",  # 16
         "motorcycle",  # 17
         "bicycle",  # 18
-    ]  # len = 20
+    ]  # len=20
     label_colours = dict(zip(range(19), colors))
 
     statistics = {'cityscapes':  # Cityscapes, SingleFrame, 2048x1024, train
-                      {'class_weights':  [2.601622,   6.704553,   3.522924,   9.876478,   9.684879,   9.397963,
-                            10.288337,   9.969174,   4.3375425,  9.453512,   7.622256,   9.404625,
-                            10.358636,  6.3711667, 10.231368,  10.262094,  10.264279,  10.39429, 10.09429],
-                        'mean': [73.15842, 82.90896, 72.39239],
-                        'std': [44.91484,  46.152893, 45.319214]},
+                      {'class_weights': [2.601622, 6.704553, 3.522924, 9.876478, 9.684879, 9.397963,
+                                         10.288337, 9.969174, 4.3375425, 9.453512, 7.622256, 9.404625,
+                                         10.358636, 6.3711667, 10.231368, 10.262094, 10.264279, 10.39429, 10.09429],
+                       'mean': [73.15842, 82.90896, 72.39239],
+                       'std': [44.91484, 46.152893, 45.319214]},
                   'cityscapes_seq':  # Cityscapes_seq_gtDeepLab, SequenceData, 2048x1024, train
-                      {'class_weights': [ 2.630181,   6.467089,   3.500679,   9.828134,   9.666817,   9.3363495,
-                                10.296027,   9.910831,   4.3855543,  9.411499,   7.660441,   9.438194,
-                                10.371957,   6.399998,  10.219244,  10.274652,  10.271446,  10.397583, 10.083669 ],
-                       'mean':  [73.20033613, 82.95346218, 72.43207843],
+                      {'class_weights': [2.630181, 6.467089, 3.500679, 9.828134, 9.666817, 9.3363495,
+                                         10.296027, 9.910831, 4.3855543, 9.411499, 7.660441, 9.438194,
+                                         10.371957, 6.399998, 10.219244, 10.274652, 10.271446, 10.397583, 10.083669],
+                       'mean': [73.20033613, 82.95346218, 72.43207843],
                        'std': [44.91366387, 46.15787395, 45.32914566]
                        }
                   }
 
-    valid_classes = [ 7, 8, 11, 12, 13, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33,]  # len=19
+    valid_classes = [7, 8, 11, 12, 13, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33, ]  # len=19
     n_classes = 19
     void_classes = [0, 1, 2, 3, 4, 5, 6, 9, 10, 14, 15, 16, 18, 29, 30, -1]
     ignore_index = 250
@@ -90,21 +83,21 @@ class CityscapesLoader(data.Dataset):
     full_resolution = [1024, 2048]
 
     def __init__(
-        self,
-        root,
-        scene_group_size,
-        sequence_overlap,
-        nr_of_scenes,
-        nr_of_sequences,
-        split,
-        augmentations,
-        shuffle_before_cut=False,
-        is_shuffle_scenes=False,
-        scale_size=None,
-        seq_len=1,
-        img_dtype=torch.float,
-        lbl_dtype=torch.uint8,
-        path_full_res=None,
+            self,
+            root,
+            scene_group_size,
+            sequence_overlap,
+            nr_of_scenes,
+            nr_of_sequences,
+            split,
+            augmentations,
+            shuffle_before_cut=False,
+            is_shuffle_scenes=False,
+            scale_size=None,
+            seq_len=1,
+            img_dtype=torch.float,
+            lbl_dtype=torch.uint8,
+            path_full_res=None,
     ):
         assert sequence_overlap < seq_len
         if isinstance(root, list):
@@ -135,10 +128,11 @@ class CityscapesLoader(data.Dataset):
         self.sequence_overlap = sequence_overlap
         self.scene_group_size = scene_group_size
         self.is_shuffle_scenes = is_shuffle_scenes
-        self.train_scales = [0]*len(self.root)
+        self.train_scales = [0] * len(self.root)
 
         self.sequences = self._generate_sequence_list(self.root, self.split, nr_of_scenes, nr_of_sequences,
-                                                      self.seq_len, self.sequence_overlap, shuffle_before_cut, self.train_scales)
+                                                      self.seq_len, self.sequence_overlap, shuffle_before_cut,
+                                                      self.train_scales)
 
         if self.scene_group_size > 0:  # Assign Scene Group number
             for sequence in self.sequences:
@@ -150,14 +144,19 @@ class CityscapesLoader(data.Dataset):
         if self.sequences:
             self.nr_of_scenes = len(set(np.array(self.sequences)[:, 4]))  # 4... scene_nr
 
-        print("Cityscapes Loader: Found %d scenes and %d %s intervals." % (self.nr_of_scenes, len(self.sequences), split))
+        print(
+            "Cityscapes Loader: Found %d scenes and %d %s intervals." % (self.nr_of_scenes, len(self.sequences), split))
 
-    def _generate_sequence_list(self, dirs, splits, nr_scenes, nr_sequences, seq_len, seq_overlap, shuffle_before_cut, train_scales):
+    def _generate_sequence_list(self, dirs, splits, nr_scenes, nr_sequences, seq_len, seq_overlap, shuffle_before_cut,
+                                train_scales):
         sequences = []  # [(img_path, lbl_path),...], 'scene_name', seq_in_scene, scene_group_nr, scene_nr, 'file_type', files_seq_nr[], augmentation[hflip, scaleSize]
         scene_nr = 0
         scene_group_nr = 0
         augmentation = [0]
-        for dir, split, nr_of_scenes, nr_of_sequences, shuffle_bef_cut, train_scale in zip(dirs, splits, nr_scenes, nr_sequences, shuffle_before_cut, train_scales):
+        for dir, split, nr_of_scenes, nr_of_sequences, shuffle_bef_cut, train_scale in zip(dirs, splits, nr_scenes,
+                                                                                           nr_sequences,
+                                                                                           shuffle_before_cut,
+                                                                                           train_scales):
             images_base = os.path.join(dir, "leftImg8bit", split)
             lbls_base = os.path.join(dir, "gtFine", split)
             files = recursive_glob(rootdir=images_base, suffix=".png")
@@ -166,7 +165,8 @@ class CityscapesLoader(data.Dataset):
             if split != 'test':  # remove files without labels
                 files_temp = []
                 for i, file in enumerate(files):
-                    lbl_path = os.path.join(lbls_base, file.split(os.sep)[-2], os.path.basename(file)[:-15] + "gtFine_labelIds.png")
+                    lbl_path = os.path.join(lbls_base, file.split(os.sep)[-2],
+                                            os.path.basename(file)[:-15] + "gtFine_labelIds.png")
                     if os.path.isfile(lbl_path):
                         files_temp.append(file)
                 files = files_temp
@@ -177,7 +177,8 @@ class CityscapesLoader(data.Dataset):
                 scene_nr = sequences[-1][4] + 1
             seq_in_scene = 0
             for i, file in enumerate(files):
-                lbl_path = os.path.join(lbls_base, file.split(os.sep)[-2], os.path.basename(file)[:-15] + "gtFine_labelIds.png")
+                lbl_path = os.path.join(lbls_base, file.split(os.sep)[-2],
+                                        os.path.basename(file)[:-15] + "gtFine_labelIds.png")
                 current_file_type = ''
                 if len(re.findall(r'_\d+_\d+_\d+_', os.path.basename(file))) == 1:  # video-file
                     current_file_type = 'video-file'
@@ -206,9 +207,10 @@ class CityscapesLoader(data.Dataset):
                 elif len(prev_interval[0]) == seq_len:  # check if last interval full --> new interval, same_scene
                     seq_in_scene += 1
                     if seq_overlap > 0:
-                        sequences_dataset.append([prev_interval[0][-seq_overlap:] + [(file, lbl_path)], prev_interval[1],
-                                                    seq_in_scene, scene_group_nr, scene_nr, current_file_type,
-                                                    prev_interval[6][-seq_overlap:] + [seq_nr], augmentation.copy() + [train_scale]])
+                        sequences_dataset.append(
+                            [prev_interval[0][-seq_overlap:] + [(file, lbl_path)], prev_interval[1],
+                             seq_in_scene, scene_group_nr, scene_nr, current_file_type,
+                             prev_interval[6][-seq_overlap:] + [seq_nr], augmentation.copy() + [train_scale]])
                     else:
                         sequences_dataset.append(
                             [[(file, lbl_path)], prev_interval[1], seq_in_scene, scene_group_nr, scene_nr,
@@ -244,7 +246,7 @@ class CityscapesLoader(data.Dataset):
         for seq in self.sequences:
             scene_nr_at_scale[seq[7][1]].append(seq[4])  # get scene_nrs for each scale
         for i in range(len(self.train_scales)):  # shuffle each scale
-            scene_nr_at_scale[i] = np.repeat(np.unique(np.array(scene_nr_at_scale[i]))[None,:], 2, axis=0)
+            scene_nr_at_scale[i] = np.repeat(np.unique(np.array(scene_nr_at_scale[i]))[None, :], 2, axis=0)
             random.shuffle(scene_nr_at_scale[i][1])  # inplace
 
         # assign new scene_nr
@@ -254,7 +256,8 @@ class CityscapesLoader(data.Dataset):
 
         for sequence in self.sequences:  # assign scene group nr
             sequence[3] = sequence[4] // self.scene_group_size  # works, because sequence is reference #  4... scene_nr
-        self.sequences.sort(key=lambda x: (x[7][1], x[3], x[2], x[4]))  # sort first by train_scale, then by scene_group_nr, then by seq_in_scene, then by scene_nr
+        self.sequences.sort(key=lambda x: (x[7][1], x[3], x[2], x[
+            4]))  # sort first by train_scale, then by scene_group_nr, then by seq_in_scene, then by scene_nr
 
     def shuffle_scenes_of_sequences(self, sequences):
         assert self.scene_group_size > 0
@@ -266,10 +269,11 @@ class CityscapesLoader(data.Dataset):
 
         # assign new scene_nr and scene group nr
         for sequence in sequences:
-            sequence[4] = scene_numbers[sequence[4]-start_scene_number]
+            sequence[4] = scene_numbers[sequence[4] - start_scene_number]
             sequence[3] = sequence[4] // self.scene_group_size  # works, because sequence is reference #  4... scene_nr
 
-        sequences.sort(key=lambda x: (x[4], x[2]))  # sort first by scene_group_nr, then by seq_in_scene, then by scene_nr
+        sequences.sort(
+            key=lambda x: (x[4], x[2]))  # sort first by scene_group_nr, then by seq_in_scene, then by scene_nr
 
     def hflip_scenes(self):
         self.sequences.sort(key=lambda x: (x[4]))  # sort by scene_nr
@@ -293,7 +297,8 @@ class CityscapesLoader(data.Dataset):
         return len(self.sequences)
 
     def __getitem__(self, index):
-        sequence = self.sequences[index]  # [(img_path, lbl_path),...], 'scene_name', seq_in_scene, scene_group_nr, scene_nr, 'file_type', files_seq_nr[]
+        sequence = self.sequences[
+            index]  # [(img_path, lbl_path),...], 'scene_name', seq_in_scene, scene_group_nr, scene_nr, 'file_type', files_seq_nr[]
         imgs = []
         lbls = []
         for time_step, (img_path, lbl_path) in enumerate(sequence[0]):
@@ -303,7 +308,7 @@ class CityscapesLoader(data.Dataset):
                 lbl = Image.open(lbl_path)
                 lbl = self.labelId_to_segmap(np.array(lbl, dtype=np.uint8))
             else:
-                lbl = np.zeros((1,1))
+                lbl = np.zeros((1, 1))
             img, lbl = self.transform(img, lbl)
             imgs.append(img)
             lbls.append(lbl)
@@ -315,12 +320,12 @@ class CityscapesLoader(data.Dataset):
 
     def transform(self, img, lbl):
         if self.scale_size:
-            img = m.imresize(img, (self.scale_size[0], self.scale_size[1]))
+            img = np.array(Image.fromarray(img).resize((self.scale_size[1], self.scale_size[0]), Image.BILINEAR))
         img = img.astype(np.float32)
 
         if 'uniform' in self.augmentations:
-                img -= self.statistics['mean']
-                img /= self.statistics['std']
+            img -= self.statistics['mean']
+            img /= self.statistics['std']
         elif 'normalize' in self.augmentations:
             img /= 255.0
 
@@ -338,7 +343,7 @@ class CityscapesLoader(data.Dataset):
             rgb = rgb.astype(np.float)
             rgb /= 255.0
         if insert_mask:
-            rgb[gt == 250] = [0,0,0]
+            rgb[gt == 250] = [0, 0, 0]
         return rgb
 
     def labelId_to_segmap(self, mask):  # input:7,8,11,...  output: 0,1,2,...
@@ -359,11 +364,12 @@ class CityscapesLoader(data.Dataset):
 def get_ego_vehicle_mask(label_id_img):
     img = m.imread(label_id_img)
     img = np.array(img, dtype=np.uint8)
-    return img==CityscapesLoader.ego_vehicle_class_id
+    return img == CityscapesLoader.ego_vehicle_class_id
 
 
 def compute_class_weights(classWeights, histogram, classes):
     normHist = histogram / np.sum(histogram)
     for i in range(classes):
-        classWeights[i] = 1 / (np.log(1.10 + normHist[i]))  # 1.10 is the normalization value, as defined in ERFNet paper
+        classWeights[i] = 1 / (
+            np.log(1.10 + normHist[i]))  # 1.10 is the normalization value, as defined in ERFNet paper
     return classWeights

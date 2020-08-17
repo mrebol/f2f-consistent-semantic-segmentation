@@ -1,13 +1,13 @@
 model:
     load: model/ESPNetL1b-Cityscapes-pretrained.pkl
-    gpu: 1  # 0..CPU, 1..GPU1, 2..GPU2,...
+    gpu: 0  # 0..CPU, 1..GPU1, 2..GPU2,...
 
 data:
     dataset: data/cityscapes_sequence
     splits: val  # test, train, val
     nr_of_scenes: all  # 0,1,2,..,all
     nr_of_sequences: all  # 0,1,2,..,all
-    sequence_length: 2
+    sequence_length: 1
     input_size: [512, 1024]  #  height, width
 
 output:

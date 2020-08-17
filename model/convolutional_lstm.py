@@ -13,7 +13,7 @@ class ConvLSTMCell5(nn.Module):  # normal conv with peephole connections
         self.num_gates = 4  # f i g o
         self.padding = int((kernel_size - 1) / 2)
         self.convolution = nn.Conv2d(self.input_channels + self.hidden_channels, 4 * self.hidden_channels,
-                              self.kernel_size, stride=1, padding=self.padding, dilation=dilation)
+                                     self.kernel_size, stride=1, padding=self.padding, dilation=dilation)
         self.activation_function = activation_function
         self.peephole_weights = nn.Parameter(torch.zeros(3, self.hidden_channels), requires_grad=True)
 
@@ -35,7 +35,8 @@ class ConvLSTM(nn.Module):
     # input_channels corresponds to the first input feature map
     # hidden state is a list of succeeding lstm layers.
     def __init__(self, input_channels, hidden_channels, kernel_size, activation_function, device,
-                 dtype, state_init, cell_type, batch_size, time_steps, overlap, dilation=1, init='default', is_stateful=True, state_img_size=None):
+                 dtype, state_init, cell_type, batch_size, time_steps, overlap, dilation=1, init='default',
+                 is_stateful=True, state_img_size=None):
         super(ConvLSTM, self).__init__()
 
         self.input_channels = input_channels
@@ -50,7 +51,8 @@ class ConvLSTM(nn.Module):
             activation_function = nn.PReLU()
         self.cell_type = cell_type
         if cell_type == 5:
-            self.cell = ConvLSTMCell5(self.input_channels, self.hidden_channels, self.kernel_size, self.dilation, activation_function)
+            self.cell = ConvLSTMCell5(self.input_channels, self.hidden_channels, self.kernel_size, self.dilation,
+                                      activation_function)
         self.is_stateful = is_stateful
         self.dtype = dtype
         self.device = device
@@ -63,26 +65,34 @@ class ConvLSTM(nn.Module):
         # initialization
         if init == 'default':
             self.cell.convolution.bias.data.fill_(0)  # init all biases with 0
-            nn.init.xavier_normal_(self.cell.convolution.weight.data[0 * self.cell.hidden_channels: 1 * self.cell.hidden_channels])  # sigmoid, i
-            nn.init.xavier_normal_(self.cell.convolution.weight.data[1 * self.cell.hidden_channels: 2 * self.cell.hidden_channels])  # sigmoid, f
-            self.cell.convolution.bias.data[1 * self.cell.hidden_channels: 2 * self.cell.hidden_channels].fill_(0.1)  # f bias
-            nn.init.xavier_normal_(self.cell.convolution.weight.data[2 * self.cell.hidden_channels: 3 * self.cell.hidden_channels])  # sigmoid, o
+            nn.init.xavier_normal_(self.cell.convolution.weight.data[
+                                   0 * self.cell.hidden_channels: 1 * self.cell.hidden_channels])  # sigmoid, i
+            nn.init.xavier_normal_(self.cell.convolution.weight.data[
+                                   1 * self.cell.hidden_channels: 2 * self.cell.hidden_channels])  # sigmoid, f
+            self.cell.convolution.bias.data[1 * self.cell.hidden_channels: 2 * self.cell.hidden_channels].fill_(
+                0.1)  # f bias
+            nn.init.xavier_normal_(self.cell.convolution.weight.data[
+                                   2 * self.cell.hidden_channels: 3 * self.cell.hidden_channels])  # sigmoid, o
             if cell_type == 5:
                 nn.init.constant_(self.cell.peephole_weights, 0.1)
         if activation_function == 'tanh':
-            nn.init.xavier_normal_(self.cell.convolution.weight.data[3 * self.cell.hidden_channels: 4 * self.cell.hidden_channels])  # tanh, g
+            nn.init.xavier_normal_(self.cell.convolution.weight.data[
+                                   3 * self.cell.hidden_channels: 4 * self.cell.hidden_channels])  # tanh, g
         elif activation_function in ['lrelu', 'prelu']:
-            nn.init.kaiming_normal_(self.cell.convolution.weight.data[3 * self.cell.hidden_channels: 4 * self.cell.hidden_channels], nonlinearity='leaky_relu')  # lrelu, g
-
+            nn.init.kaiming_normal_(
+                self.cell.convolution.weight.data[3 * self.cell.hidden_channels: 4 * self.cell.hidden_channels],
+                nonlinearity='leaky_relu')  # lrelu, g
 
     def forward(self, inputs, states):  # inputs shape: time_step, batch_size, channels, height, width
         new_states = None
         time_steps = inputs.shape[0]
         outputs = torch.empty(time_steps, self.batch_size, self.hidden_channels, inputs.shape[3],
-                              inputs.shape[4], dtype=self.dtype ,device=self.device)
+                              inputs.shape[4], dtype=self.dtype, device=self.device)
         if self.is_stateful == 0 or states is None:
-            h = nn.functional.interpolate(self.h0.expand(self.batch_size, -1, -1, -1), size=(inputs.shape[3],inputs.shape[4]), mode='bilinear', align_corners=True)
-            c = nn.functional.interpolate(self.c0.expand(self.batch_size, -1, -1, -1), size=(inputs.shape[3],inputs.shape[4]), mode='bilinear', align_corners=True)
+            h = nn.functional.interpolate(self.h0.expand(self.batch_size, -1, -1, -1),
+                                          size=(inputs.shape[3], inputs.shape[4]), mode='bilinear', align_corners=True)
+            c = nn.functional.interpolate(self.c0.expand(self.batch_size, -1, -1, -1),
+                                          size=(inputs.shape[3], inputs.shape[4]), mode='bilinear', align_corners=True)
             print("Init LSTM")
         else:
             c = states[0]
@@ -93,7 +103,7 @@ class ConvLSTM(nn.Module):
             h, c = self.cell(x, h, c)  # to run hooks (pre, post) and .forward()
 
             if self.cell_type == 4:
-                outputs[time_step] = h[:,:,0]
+                outputs[time_step] = h[:, :, 0]
             else:
                 outputs[time_step] = h
             if self.is_stateful and time_step == time_steps - (self.overlap + 1):
@@ -103,20 +113,30 @@ class ConvLSTM(nn.Module):
 
     def init_states(self, state_size, state_init):
         if state_init == 'zero':
-            self.h0 = nn.Parameter(torch.zeros(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype), requires_grad=False)
-            self.c0 = nn.Parameter(torch.zeros(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype), requires_grad=False)
+            self.h0 = nn.Parameter(torch.zeros(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype),
+                                   requires_grad=False)
+            self.c0 = nn.Parameter(torch.zeros(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype),
+                                   requires_grad=False)
         elif state_init == 'rand':  # cell_state rand [0,1) init
-            self.h0 = nn.Parameter(torch.rand(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype), requires_grad=False)
-            self.c0 = nn.Parameter(torch.rand(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype), requires_grad=False)
+            self.h0 = nn.Parameter(torch.rand(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype),
+                                   requires_grad=False)
+            self.c0 = nn.Parameter(torch.rand(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype),
+                                   requires_grad=False)
         elif state_init == 'learn':
             if self.cell_type == 4:
-                self.h0 = nn.Parameter(torch.zeros(19, 4, state_size[0], state_size[1], dtype=self.dtype), requires_grad=True)
-                self.c0 = nn.Parameter(torch.zeros(19, 4, state_size[0], state_size[1], dtype=self.dtype), requires_grad=True)
+                self.h0 = nn.Parameter(torch.zeros(19, 4, state_size[0], state_size[1], dtype=self.dtype),
+                                       requires_grad=True)
+                self.c0 = nn.Parameter(torch.zeros(19, 4, state_size[0], state_size[1], dtype=self.dtype),
+                                       requires_grad=True)
             else:
-                self.h0 = nn.Parameter(torch.zeros(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype), requires_grad=True)
-                self.c0 = nn.Parameter(torch.zeros(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype), requires_grad=True)
+                self.h0 = nn.Parameter(
+                    torch.zeros(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype),
+                    requires_grad=True)
+                self.c0 = nn.Parameter(
+                    torch.zeros(self.hidden_channels, state_size[0], state_size[1], dtype=self.dtype),
+                    requires_grad=True)
 
-    def update_parameters(self, batch_size, time_steps,  overlap):
+    def update_parameters(self, batch_size, time_steps, overlap):
         self.time_steps = time_steps
         self.batch_size = batch_size
         self.overlap = overlap

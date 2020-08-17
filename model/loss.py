@@ -3,22 +3,23 @@ import numpy as np
 import torch.nn as nn
 import scipy.ndimage as sp_img
 
+
 def video_loss(output, target, cross_entropy_lambda, consistency_lambda, consistency_function, ignore_class):
     # output: Time, BatchSize, Channels, Height, Width
     # labels: Time, BatchSize, Height, Width
     valid_mask = (target != ignore_class)
     target_select = target.clone()
     target_select[target_select == ignore_class] = 0
-    target_select = target_select[:,:,None,:,:].long()
+    target_select = target_select[:, :, None, :, :].long()
 
     loss_cross_entropy = torch.tensor([0.0], dtype=torch.float32, device=output.device)
     if cross_entropy_lambda > 0:
         loss_cross_entropy = cross_entropy_lambda * cross_entropy_loss(output, target_select, valid_mask)
 
-
     loss_inconsistency = torch.tensor([0.0], dtype=torch.float32, device=output.device)
     if consistency_lambda > 0 and output.shape[0] > 1:
-        loss_inconsistency = consistency_lambda * inconsistency_loss(output, target, consistency_function, valid_mask, target_select)
+        loss_inconsistency = consistency_lambda * inconsistency_loss(output, target, consistency_function, valid_mask,
+                                                                     target_select)
 
     return loss_cross_entropy, loss_inconsistency
 
@@ -72,11 +73,14 @@ def inconsistency_loss(output, target, consistency_function, valid_mask, target_
             diff_pred_valid = diff_pred_true * (valid_mask2 & right_pred_mask).to(dtype=output.dtype)
         elif consistency_function == 'abs_diff_th20':
             th_mask = (output[t] > 0.2) & (output[t + 1] > 0.2)
-            diff_pred_valid = (torch.abs((output[t] - output[t + 1]) * th_mask.to(dtype=output.dtype))).sum(dim=1) * valid_mask2.to(output.dtype)
+            diff_pred_valid = (torch.abs((output[t] - output[t + 1]) * th_mask.to(dtype=output.dtype))).sum(
+                dim=1) * valid_mask2.to(output.dtype)
 
         diff_gt_valid = ((gt1 != gt2) & valid_mask2)  # torch.uint8
-        diff_gt_valid_dil = sp_img.binary_dilation(diff_gt_valid.cpu().numpy(), iterations=2)  # default: 4-neighbourhood
-        inconsistencies = diff_pred_valid * torch.from_numpy(np.logical_not(diff_gt_valid_dil).astype(np.uint8)).to(output.device, dtype=output.dtype)
+        diff_gt_valid_dil = sp_img.binary_dilation(diff_gt_valid.cpu().numpy(),
+                                                   iterations=2)  # default: 4-neighbourhood
+        inconsistencies = diff_pred_valid * torch.from_numpy(np.logical_not(diff_gt_valid_dil).astype(np.uint8)).to(
+            output.device, dtype=output.dtype)
         valid_mask_sum += valid_mask2.sum()
         inconsistencies_sum += inconsistencies.sum()
 

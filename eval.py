@@ -12,10 +12,11 @@ from data.metrics import RunningScore
 from utils import *
 from model.esp_net import ESPNet_L1b
 
-# TODO: requirements.txt,  Auto-Coding-Style
-# DONE: tensorboard OK, time_interval_len, find good images results, without_gt, check which statistics to use, convolutional_lstm.py cleanup, loader function cleanup ,
 
-def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_path, save_pred_color=False, save_label_ids=False):
+
+
+def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_path, save_pred_color=False,
+         save_label_ids=False):
     batch_size = val_loader.batch_size
     assert batch_size == 1  # == val_loader.dataset.time_interval
 
@@ -38,11 +39,11 @@ def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_pat
     running_metrics = RunningScore(19)
 
     for batch_nr, loader_data in enumerate(val_loader):
-        images =          loader_data[0]
-        gt     =          loader_data[1]
-        file_names =      np.array(loader_data[2])[:,:,0]  # time, img/lbl, bs
+        images = loader_data[0]
+        gt = loader_data[1]
+        file_names = np.array(loader_data[2])[:, :, 0]  # time, img/lbl, bs
         seq_nr_in_scene = loader_data[5][0].item()
-        scene_nr =        loader_data[6][0].item()
+        scene_nr = loader_data[6][0].item()
 
         images = images.transpose(0, 1).to(device)  # => TimeStep, BatchSize, ...
         gt = gt[0].numpy()
@@ -59,10 +60,14 @@ def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_pat
         else:
             outputs = net.forward(images)
         prediction = outputs.data.argmax(2).cpu()
-        prediction = prediction.reshape(prediction.shape[0]*prediction.shape[1], 1, prediction.shape[2], prediction.shape[3])
-        prediction = torch.nn.functional.interpolate(prediction.type(torch.float32), size=val_loader.dataset.full_resolution, mode='nearest').type(torch.uint8)[:,0,:,:].numpy()
+        prediction = prediction.reshape(prediction.shape[0] * prediction.shape[1], 1, prediction.shape[2],
+                                        prediction.shape[3])
+        prediction = torch.nn.functional.interpolate(prediction.type(torch.float32),
+                                                     size=val_loader.dataset.full_resolution, mode='nearest').type(
+            torch.uint8)[:, 0, :, :].numpy()
         if seq_nr_in_scene != 0:  # if not scene start
-            prediction_scene = np.concatenate((prediction_prev[None, :, :],prediction))  # stack prev pred here in time dimension
+            prediction_scene = np.concatenate(
+                (prediction_prev[None, :, :], prediction))  # stack prev pred here in time dimension
             gt_scene = np.concatenate((gt_prev[None, :, :], gt))
         else:
             prediction_scene = prediction
@@ -74,28 +79,31 @@ def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_pat
             if prediction_scene.shape[0] > 1:  # check if not time_steps = 1 and first sequence
                 consistency_metric.append(running_metrics.get_consistency(gt_scene, prediction_scene))
                 mean_consistency = np.mean(consistency_metric[-1], axis=0)
-                tensorboard.add_scalar('Validation_{}-dataset/Interval-Consistency'.format(dataset_name), mean_consistency, batch_nr)
+                tensorboard.add_scalar('Validation_{}-dataset/Interval-Consistency'.format(dataset_name),
+                                       mean_consistency, batch_nr)
 
         # Save images
         for t in range(prediction.shape[0]):
             if save_pred_color:
                 Image.fromarray(val_loader.dataset.segmap_to_color(prediction[t], gt[t], gt.shape[2] != 1, False),
-                    mode='RGB').save(os.path.join(image_save_color_path,
-                    "{}.png".format(os.path.splitext(os.path.basename(file_names[t, 0]))[0].replace("leftImg8bit", "pred_color"))))
+                                mode='RGB').save(os.path.join(image_save_color_path,
+                                                              "{}.png".format(
+                                                                  os.path.splitext(os.path.basename(file_names[t, 0]))[
+                                                                      0].replace("leftImg8bit", "pred_color"))))
             if save_label_ids:
                 Image.fromarray(
                     CityscapesLoader.segmap_to_labelId_static(prediction[t]),
-                    mode='L').save(os.path.join(image_save_label_path,"{}.png".format(
-                                            os.path.splitext(os.path.basename(file_names[t, 1]))[0])))
+                    mode='L').save(os.path.join(image_save_label_path, "{}.png".format(
+                    os.path.splitext(os.path.basename(file_names[t, 1]))[0])))
 
-        file_names_print = np.stack((file_names[0,0], file_names[-1,0]))  # file_in_seq, img/lbl
-        func = np.vectorize(lambda x: os.path.basename(x).replace('_leftImg8bit.png',''))
-        file_names_print = func(file_names_print).transpose()
+        file_names_print = np.stack((file_names[0, 0], file_names[-1, 0]))  # file_in_seq, img/lbl
+        print_func = np.vectorize(lambda x: os.path.basename(x).replace('_leftImg8bit.png', ''))
+        file_names_print = print_func(file_names_print).transpose()
         output_string = "<<Validation>> Batch_nr [%d/%d] Batch_total[%d] " \
                         "%s  Scene_nr-Seq_nr_in_scene [%s-%s]" % \
                         (batch_nr + 1, len(val_loader), batch_nr_training,
                          file_names_print, scene_nr, seq_nr_in_scene)
-        print(bcolors.GREEN + output_string + bcolors.RESET)
+        print(BColors.GREEN + output_string + BColors.RESET)
 
         prediction_prev = prediction[-1]
         gt_prev = gt[-1]
@@ -103,11 +111,12 @@ def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_pat
     # Final reports
     if consistency_metric:
         mean_consistency = np.concatenate(consistency_metric, axis=0).mean(axis=0)
-        print("Mean Consistency: {:5.2f}%".format(mean_consistency*100))
-        tensorboard.add_scalar("Validation_{}-dataset/Consistency".format(dataset_name,), mean_consistency, batch_nr_training)
+        print("Mean Consistency: {:5.2f}%".format(mean_consistency * 100))
+        tensorboard.add_scalar("Validation_{}-dataset/Consistency".format(dataset_name, ), mean_consistency,
+                               batch_nr_training)
     if val_loader.dataset.split[0] != 'test':
         acc, mean_iou = running_metrics.get_scores()
-        print('Accuracy: {:5.2f}%  mIoU: {:5.2f}%'.format(acc*100,mean_iou*100))
+        print('Accuracy: {:5.2f}%  mIoU: {:5.2f}%'.format(acc * 100, mean_iou * 100))
         tensorboard.add_scalar("Validation_{}-dataset/Accuracy".format(dataset_name), acc, batch_nr_training)
         tensorboard.add_scalar("Validation_{}-dataset/Mean_IoU".format(dataset_name), mean_iou, batch_nr_training)
     running_metrics.reset()
@@ -131,7 +140,8 @@ if __name__ == "__main__":
     torch.cuda.init()
     cuda_available = torch.cuda.is_available()
     print("CUDA available:", cuda_available, ". Number of CUDA devices = ", torch.cuda.device_count())
-    device = torch.device("cuda:{}".format(cfg['model']['gpu']-1) if torch.cuda.is_available() and cfg['model']['gpu'] else "cpu")
+    device = torch.device(
+        "cuda:{}".format(cfg['model']['gpu'] - 1) if torch.cuda.is_available() and cfg['model']['gpu'] else "cpu")
 
     batch_nr_training = 0
     if cfg['model']['gpu']:
@@ -151,7 +161,7 @@ if __name__ == "__main__":
                                 augmentations=['uniform'],
                                 scale_size=cfg['data']['input_size'],
                                 )
-    val_loader = data.DataLoader(v_loader, batch_size=1, num_workers=4, shuffle=False,)
+    val_loader = data.DataLoader(v_loader, batch_size=1, num_workers=4, shuffle=False, )
 
     # Load model
     if os.path.isfile(cfg['model']['load']):
@@ -181,9 +191,6 @@ if __name__ == "__main__":
     output_path = os.path.join('output', datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     image_path = os.path.join(output_path, 'images')
     os.makedirs(image_path)
-
-    # Save yaml file
-    # shutil.copy(args.config, os.path.join(output_path, os.path.basename(args.config)))
 
     # Load tensorboard
     tensorboard = load_tensorboard(output_path, batch_nr_training)
