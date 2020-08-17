@@ -1,0 +1,14 @@
+model:
+    load: model/stage5-t2o0bs3lbs4gs2973-aug-prelu-cons10SqDiffTrue-lr-5-phase1_bn_2754612_miou1.pkl
+
+validation:
+    gpu: 1  # 0..CPU, 1..GPU1, 2..GPU2,...
+    dataset: data/cityscapes_sequence
+    #dataset: data/test
+    splits: val  # test, train, val
+    nr_of_scenes: all  # 0,1,2,..,all
+    nr_of_sequences: all  # 0,1,2,..,all
+    input_size: [512, 1024]  #  height, width
+    save_pred_color: True  # Save segmentation color images
+    save_label_ids: False  # For Cityscapes test submission
+
