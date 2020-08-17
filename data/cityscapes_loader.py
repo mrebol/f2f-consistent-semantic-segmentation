@@ -150,7 +150,7 @@ class CityscapesLoader(data.Dataset):
         if self.sequences:
             self.nr_of_scenes = len(set(np.array(self.sequences)[:, 4]))  # 4... scene_nr
 
-        print("Found %d scenes and %d %s intervals." % (self.nr_of_scenes, len(self.sequences), split))
+        print("Cityscapes Loader: Found %d scenes and %d %s intervals." % (self.nr_of_scenes, len(self.sequences), split))
 
     def _generate_sequence_list(self, dirs, splits, nr_scenes, nr_sequences, seq_len, seq_overlap, shuffle_before_cut, train_scales):
         sequences = []  # [(img_path, lbl_path),...], 'scene_name', seq_in_scene, scene_group_nr, scene_nr, 'file_type', files_seq_nr[], augmentation[hflip, scaleSize]

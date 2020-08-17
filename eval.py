@@ -12,8 +12,8 @@ from data.metrics import RunningScore
 from utils import *
 from model.esp_net import ESPNet_L1b
 
-# TODO: time_interval_len, without_gt, requirements.txt, convolutional_lstm.py cleanup, find good images results, check which statistics to use
-# DONE: tensorboard OK,
+# TODO:  without_gt, requirements.txt, convolutional_lstm.py cleanup, loader function cleanup,  Auto-Coding-Style
+# DONE: tensorboard OK, time_interval_len, find good images results, , check which statistics to use
 
 def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_path, save_pred_color=False, save_label_ids=False):
     batch_size = val_loader.batch_size
@@ -129,24 +129,25 @@ if __name__ == "__main__":
     torch.cuda.init()
     cuda_available = torch.cuda.is_available()
     print("CUDA available:", cuda_available, ". Number of CUDA devices = ", torch.cuda.device_count())
-    device = torch.device("cuda:{}".format(cfg['validation']['gpu']-1) if torch.cuda.is_available() and cfg['validation']['gpu'] else "cpu")
+    device = torch.device("cuda:{}".format(cfg['model']['gpu']-1) if torch.cuda.is_available() and cfg['model']['gpu'] else "cpu")
 
-    batch_total = 0
-    if cfg['validation']['gpu']:
+    batch_nr_training = 0
+    if cfg['model']['gpu']:
         checkpoint = torch.load(cfg['model']['load'])
     else:
         checkpoint = torch.load(cfg['model']['load'], map_location='cpu')
     model_name = checkpoint["model_name"]
 
     # Setup dataloader
-    v_loader = CityscapesLoader(root=cfg['validation']['dataset'],
-                                split=cfg['validation']['splits'],
+    v_loader = CityscapesLoader(root=cfg['data']['dataset'],
+                                split=cfg['data']['splits'],
                                 scene_group_size=0,
-                                nr_of_scenes=cfg['validation']['nr_of_scenes'],
-                                nr_of_sequences=cfg['validation']['nr_of_sequences'],
+                                nr_of_scenes=cfg['data']['nr_of_scenes'],
+                                nr_of_sequences=cfg['data']['nr_of_sequences'],
+                                seq_len=cfg['data']['sequence_length'],
                                 sequence_overlap=0,
                                 augmentations=['uniform'],
-                                scale_size=cfg['validation']['input_size'],
+                                scale_size=cfg['data']['input_size'],
                                 )
     val_loader = data.DataLoader(v_loader, batch_size=1, num_workers=4, shuffle=False,)
 
@@ -165,11 +166,11 @@ if __name__ == "__main__":
                 activation_function = 'lrelu'
             if checkpoint['model_state']['encoder.clstm.c0'].requires_grad:
                 state_init = 'learn'
-            net = ESPNet_L1b('default', activation_function, cfg['validation']['input_size'],
+            net = ESPNet_L1b('default', activation_function, cfg['data']['input_size'],
                              device, torch.float32, 1, state_init, cell_type, 1, 1,
                              checkpoint['model_state']['encoder.clstm.cell.convolution.weight'].shape[-1], 0)
         net.load_state_dict(checkpoint["model_state"])
-        batch_total = checkpoint["batch_total"]
+        batch_nr_training = checkpoint["batch_total"]
         print("Loaded checkpoint '{}' (iteration {})".format(cfg['model']['load'], checkpoint["iter"]))
     else:
         raise Exception("No checkpoint found at '{}'".format(cfg['model']['load']))
@@ -183,12 +184,12 @@ if __name__ == "__main__":
     # shutil.copy(args.config, os.path.join(output_path, os.path.basename(args.config)))
 
     # Load tensorboard
-    tensorboard = load_tensorboard(output_path, batch_total)
+    tensorboard = load_tensorboard(output_path, batch_nr_training)
 
     net.eval()
     net = net.to(device)
     with torch.no_grad():
-        eval(val_loader, net, tensorboard, device, batch_total, image_path,
-             cfg['validation']['save_pred_color'], cfg['validation']['save_label_ids'])
+        eval(val_loader, net, tensorboard, device, batch_nr_training, image_path,
+             cfg['output']['save_pred_color'], cfg['output']['save_label_ids'])
 
     tensorboard.close()
