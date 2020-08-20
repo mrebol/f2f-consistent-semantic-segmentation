@@ -10,7 +10,7 @@ This code implements the method introduced in the publication [Frame-To-Frame Co
       year = {2020}
     } 
     
-![ESPNet vs our model](https://github.com/mrebol/f2fcss/blob/master/esp_vs_our_model.gif)
+![ESPNet vs our model](https://github.com/mrebol/f2fcss/blob/master/resources/esp_vs_our_model.gif)
 *ESPNet vs Our Model ESPNet_L1b*
 
 ## Dependencies
