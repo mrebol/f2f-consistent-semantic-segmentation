@@ -1,6 +1,6 @@
 # Frame-To-Frame Consistent Semantic Segmentation
 
-This code runs the method described in the paper [Frame-To-Frame Consistent Semantic Segmentation](https://arxiv.org/abs/2008.00948):
+This code implements the method described in the paper [Frame-To-Frame Consistent Semantic Segmentation](https://arxiv.org/abs/2008.00948):
 
     @InProceedings{Rebol_2020_ACVRW,
       author = {Rebol, Manuel and Knöbelreiter, Patrick},
