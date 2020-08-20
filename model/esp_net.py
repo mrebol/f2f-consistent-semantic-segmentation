@@ -277,7 +277,7 @@ class ESPNet_Encoder(nn.Module):
 
     def __init__(self, classes=19, p=2, q=3):
         '''
-        :param classes: number of classes in the dataset. Default is 19 for the cityscapes_sequence
+        :param classes: number of classes in the dataset. Default is 19 for the cityscapes_video
         :param p: depth multiplier
         :param q: depth multiplier
         '''
@@ -349,7 +349,7 @@ class ESPNet(nn.Module):
                  val_img_size,
                  lstm_activation_function, classes=19, p=2, q=3, encoder_type=None, encoderFile=None):
         '''
-        :param classes: number of classes in the dataset. Default is 19 for the cityscapes_sequence
+        :param classes: number of classes in the dataset. Default is 19 for the cityscapes_video
         :param p: depth multiplier
         :param q: depth multiplier
         :param encoderFile: pretrained encoder weights. Recall that we first trained the ESPNet-C and then attached the

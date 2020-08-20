@@ -3,14 +3,14 @@ model:
     gpu: 0  # 0..CPU, 1..GPU1, 2..GPU2,...
 
 data:
-    dataset: data/cityscapes_sequence
+    dataset: data/cityscapes_video
     splits: val  # test, train, val
     nr_of_scenes: all  # 0,1,2,..,all
     nr_of_sequences: all  # 0,1,2,..,all
-    sequence_length: 1
+    sequence_length: 1  # nr of sequential images passed to the network (~batch size)
     input_size: [512, 1024]  #  height, width
 
 output:
     save_pred_color: True  # Save segmentation color images
-    save_label_ids: True  # For Cityscapes test submission
+    save_label_ids: False  # For Cityscapes test submission
 
