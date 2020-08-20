@@ -14,13 +14,16 @@ This code runs the method described in the paper [Frame-To-Frame Consistent Sema
 *ESPNet vs Our Model ESPNet_L1b*
 
 ## Dependencies
++ CUDA 11.0 for execution on GPU (optional)
 + Python 3.7
 + PyTorch 1.3.1 
 + pip packages in `requirements.txt`
 
 
 ## Dataset
-
+We provide a data loader for the Cityscapes dataset in the `data` directory. 
+Additionally, we included frames of the Cityscapes Demo Video in the repository to support quick first experiments.
+Images placed inside the `data/cityscapes_video/leftImg8bit/val` directory do require corresponding ground truth files, whereas images in the `data/cityscapes_video/leftImg8bit/test` directory don't. 
 
 ## Configuration
 The default configuration file is stored in `config/eval.yml`. 
@@ -32,9 +35,9 @@ The required python packages need to be installed using the provided `requiremen
 
     pip install -r requirements.txt
     
-To run evaulation with the default config file located in `config/eval.yml` enter:
+To run evaulation with the default config file located at `config/eval.yml` enter:
 
-    python eval.py  
+    python eval.py --config config/eval.yml 
 
 ## Results
 The results consist of the predicted semantic segmentation images and the Tensorboard logs. Both are stored in the `output` folder. The Tensorboard logs can be examined after installing [Tensorboard](https://www.tensorflow.org/tensorboard) with the command:
