@@ -1,6 +1,6 @@
 # Frame-To-Frame Consistent Semantic Segmentation
 
-This code implements the method described in the publication [Frame-To-Frame Consistent Semantic Segmentation](https://arxiv.org/abs/2008.00948):
+This code implements the method introduced in the publication [Frame-To-Frame Consistent Semantic Segmentation](https://arxiv.org/abs/2008.00948):
 
     @InProceedings{Rebol_2020_ACVRW,
       author = {Rebol, Manuel and Knöbelreiter, Patrick},
@@ -27,7 +27,9 @@ Images placed inside the `data/cityscapes_video/leftImg8bit/val` directory do re
 
 ## Configuration
 The default configuration file is stored in `config/eval.yml`. 
-If the GPU option is enabled, CUDA 11.0 needs to be installed additionally.
+It loads the pretrained ESPNet_L1b model and inputs the dataset provided.
+If the GPU parameter in the config is enabled, CUDA 11.0 needs to be installed additionally.
+
 
 ## Evaluation
 
