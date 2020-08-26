@@ -3,13 +3,13 @@ import yaml
 import argparse
 import torch
 from PIL import Image
-import os
+
 from torch.utils import data
 from datetime import datetime
 
 from data.cityscapes_loader import CityscapesLoader
 from data.metrics import RunningScore
-from utils import *
+from utils.utils import *
 from model.esp_net import ESPNet_L1b
 
 

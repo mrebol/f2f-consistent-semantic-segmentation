@@ -1,4 +1,4 @@
-# Adapted from score written by Sachin Mehta
+# Adapted from code written by Sachin Mehta
 # https://github.com/sacmehta/ESPNet/tree/master/test
 
 import torch

@@ -1,13 +1,12 @@
-import os
 import random
 import re
-
 import numpy as np
 import torch
 from PIL import Image
 from torch.utils import data
+from os import path, sep
 
-from utils import recursive_glob
+from utils.utils import recursive_glob
 
 
 class CityscapesLoader(data.Dataset):
@@ -15,8 +14,8 @@ class CityscapesLoader(data.Dataset):
     rectification_border_class_id = 2
     out_of_roi_class_id = 3
 
-    colors = [  # [  0,   0,   0],
-        [128, 64, 128],  # road = dark-ppurple-pink
+    colors = [
+        [128, 64, 128],
         [244, 35, 232],
         [70, 70, 70],
         [102, 102, 156],
@@ -157,17 +156,17 @@ class CityscapesLoader(data.Dataset):
                                                                                            nr_sequences,
                                                                                            shuffle_before_cut,
                                                                                            train_scales):
-            images_base = os.path.join(dir, "leftImg8bit", split)
-            lbls_base = os.path.join(dir, "gtFine", split)
+            images_base = path.join(dir, "leftImg8bit", split)
+            lbls_base = path.join(dir, "gtFine", split)
             files = recursive_glob(rootdir=images_base, suffix=".png")
             files = sorted(files)
 
             if split != 'test':  # remove files without labels
                 files_temp = []
                 for i, file in enumerate(files):
-                    lbl_path = os.path.join(lbls_base, file.split(os.sep)[-2],
-                                            os.path.basename(file)[:-15] + "gtFine_labelIds.png")
-                    if os.path.isfile(lbl_path):
+                    lbl_path = path.join(lbls_base, file.split(sep)[-2],
+                                            path.basename(file)[:-15] + "gtFine_labelIds.png")
+                    if path.isfile(lbl_path):
                         files_temp.append(file)
                 files = files_temp
 
@@ -177,15 +176,15 @@ class CityscapesLoader(data.Dataset):
                 scene_nr = sequences[-1][4] + 1
             seq_in_scene = 0
             for i, file in enumerate(files):
-                lbl_path = os.path.join(lbls_base, file.split(os.sep)[-2],
-                                        os.path.basename(file)[:-15] + "gtFine_labelIds.png")
+                lbl_path = path.join(lbls_base, file.split(sep)[-2],
+                                        path.basename(file)[:-15] + "gtFine_labelIds.png")
                 current_file_type = ''
-                if len(re.findall(r'_\d+_\d+_\d+_', os.path.basename(file))) == 1:  # video-file
+                if len(re.findall(r'_\d+_\d+_\d+_', path.basename(file))) == 1:  # video-file
                     current_file_type = 'video-file'
-                    seq_nr_str = re.findall(r'\d+_\d+_\d+', os.path.basename(file))[0]
-                elif len(re.findall(r'_\d+_\d+_', os.path.basename(file))) == 1:  # single-frame file or sequence file
+                    seq_nr_str = re.findall(r'\d+_\d+_\d+', path.basename(file))[0]
+                elif len(re.findall(r'_\d+_\d+_', path.basename(file))) == 1:  # single-frame file or sequence file
                     current_file_type = 'seq-file'
-                    seq_nr_str = re.findall(r'_\d+_\d+_', os.path.basename(file))[0]
+                    seq_nr_str = re.findall(r'_\d+_\d+_', path.basename(file))[0]
                     seq_nr_str = seq_nr_str[1:-1]
 
                 seq_nr = int(seq_nr_str.replace('_', ''))
@@ -304,7 +303,7 @@ class CityscapesLoader(data.Dataset):
         for time_step, (img_path, lbl_path) in enumerate(sequence[0]):
             img = Image.open(img_path)
             img = np.array(img, dtype=np.uint8)
-            if os.path.exists(lbl_path):
+            if path.exists(lbl_path):
                 lbl = Image.open(lbl_path)
                 lbl = self.labelId_to_segmap(np.array(lbl, dtype=np.uint8))
             else:
@@ -362,7 +361,7 @@ class CityscapesLoader(data.Dataset):
 
 
 def get_ego_vehicle_mask(label_id_img):
-    img = m.imread(label_id_img)
+    img = Image.open(label_id_img)
     img = np.array(img, dtype=np.uint8)
     return img == CityscapesLoader.ego_vehicle_class_id
 
