@@ -1,4 +1,22 @@
-import os
+# This file is part of f2fcss.
+#
+# Copyright (C) 2020 Manuel Rebol <rebol at student dot tugraz dot at>
+# Patrick Knoebelreiter <knoebelreiter at icg dot tugraz dot at>
+# Institute for Computer Graphics and Vision, Graz University of Technology
+# https://www.tugraz.at/institute/icg/teams/team-pock/
+#
+# f2fcss is free software: you can redistribute it and/or modify it under the
+# terms of the GNU Affero General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or any later version.
+#
+# f2fcss is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+from os import path, makedirs, walk
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import shutil
@@ -36,8 +54,8 @@ class BColors:
 
 def recursive_glob(rootdir=".", suffix=""):
     return [
-        os.path.join(looproot, filename)
-        for looproot, _, filenames in os.walk(rootdir)
+        path.join(looproot, filename)
+        for looproot, _, filenames in walk(rootdir)
         for filename in filenames
         if filename.endswith(suffix)
     ]
@@ -46,7 +64,7 @@ def recursive_glob(rootdir=".", suffix=""):
 def filenames_in_dir(dir=".", suffix=""):
     return [
         filename
-        for _, _, filenames in os.walk(dir)
+        for _, _, filenames in walk(dir)
         for filename in filenames
         if filename.endswith(suffix)
     ]
@@ -75,34 +93,25 @@ def save_val(imgs, pred, gt, bs, loader, batch_total_nr, valid_img_nr, experimen
         axarr[0].imshow(loader.segmap_to_color(pred[0]))
         axarr[1].imshow(loader.segmap_to_color(gt[0]))
         axarr[2].imshow(imgs[0].permute(1, 2, 0))
-    plt.savefig(os.path.join(experiment_path, "val",
+    plt.savefig(path.join(experiment_path, "val",
                              "batch_nr_{:06}_val_img_{:02}.png".format(batch_total_nr, valid_img_nr)))
     plt.close()
 
 
 def mkdir_p(mypath):
-    """Creates a directory. equivalent to using mkdir -p on the command line"""
-    from errno import EEXIST
-    from os import makedirs, path
+    makedirs(mypath, exist_ok=True)
 
-    try:
-        makedirs(mypath)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == EEXIST and path.isdir(mypath):
-            pass
-        else:
-            raise
 
 
 def load_tensorboard(dir, batch_total):
-    if os.path.isdir(os.path.join(dir, "tensorboard", "bn-{:06}".format(batch_total))):
+    if path.isdir(path.join(dir, "tensorboard", "bn-{:06}".format(batch_total))):
         ex = "Tensorboard folder {} already exists!".format(
-            os.path.join(dir, "tensorboard", "bn-{:06}".format(batch_total)))
+            path.join(dir, "tensorboard", "bn-{:06}".format(batch_total)))
         print(ex)
         response = input("Remove existing? (y/n): ")
         if response == 'y':
-            shutil.rmtree(os.path.join(dir, "tensorboard", "bn-{:06}".format(batch_total)))
-            mkdir_p(os.path.join(dir, "tensorboard", "bn-{:06}".format(batch_total)))
+            shutil.rmtree(path.join(dir, "tensorboard", "bn-{:06}".format(batch_total)))
+            mkdir_p(path.join(dir, "tensorboard", "bn-{:06}".format(batch_total)))
         else:
             raise Exception(ex)  # remove manually
-    return SummaryWriter(os.path.join(dir, "tensorboard", "bn-{:06}".format(batch_total)))
+    return SummaryWriter(path.join(dir, "tensorboard", "bn-{:06}".format(batch_total)))

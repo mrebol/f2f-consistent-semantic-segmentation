@@ -1,6 +1,6 @@
 # Adapted from code written by Sachin Mehta
 # https://github.com/sacmehta/ESPNet/tree/master/test
-
+#
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -465,8 +465,7 @@ class ESPNet(nn.Module):
 
 class ESPNet_C_L1b(nn.Module):
     def __init__(self, lstm_filter_size, device, dtype, state_init, cell_type, batch_size, time_steps, overlap,
-                 val_img_size, lstm_activation_function,
-                 classes=19, p=2, q=3, init='default'):
+                 val_img_size, lstm_activation_function, classes=19, p=2, q=3, init='default'):
         super().__init__()
         self.val_img_size = val_img_size
         self.state_scale_factor = 8

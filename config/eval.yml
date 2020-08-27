@@ -1,5 +1,24 @@
+# This file is part of f2fcss.
+#
+# Copyright (C) 2020 Manuel Rebol <rebol at student dot tugraz dot at>
+# Patrick Knoebelreiter <knoebelreiter at icg dot tugraz dot at>
+# Institute for Computer Graphics and Vision, Graz University of Technology
+# https://www.tugraz.at/institute/icg/teams/team-pock/
+#
+# f2fcss is free software: you can redistribute it and/or modify it under the
+# terms of the GNU Affero General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or any later version.
+#
+# f2fcss is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 model:
     load: model/ESPNetL1b-Cityscapes-pretrained.pkl
+    input_size: [512, 1024]  #  height, width of model input
     gpu: 0  # 0..CPU, 1..GPU1, 2..GPU2,...
 
 data:
@@ -8,7 +27,6 @@ data:
     nr_of_scenes: all  # 0,1,2,..,all
     nr_of_sequences: all  # 0,1,2,..,all
     sequence_length: 1  # nr of sequential images passed to the network (~batch size)
-    input_size: [512, 1024]  #  height, width
 
 output:
     save_pred_color: True  # Save segmentation color images

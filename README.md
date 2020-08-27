@@ -37,13 +37,19 @@ The required python packages need to be installed using the provided `requiremen
 
     pip install -r requirements.txt
     
-To run evaulation with the default config file located at `config/eval.yml` enter:
+To run the evaluation with the default config file located at `config/eval.yml` enter:
 
     python eval.py --config config/eval.yml 
 
 ## Results
-The results consist of the predicted semantic segmentation images and the Tensorboard logs. Both are stored in the `output` folder. The Tensorboard logs can be examined after installing [Tensorboard](https://www.tensorflow.org/tensorboard) with the command:
+The results consist of the predicted semantic segmentation images and the Tensorboard logs. Both are stored in the `output` folder. 
+
+The generated tensorboard logs can be examined after installing [Tensorboard](https://www.tensorflow.org/tensorboard):
+    
+    pip install tensorboard 
+with the command:
 
     tensorboard --logdir output 
 
+Tensorboard displays the statistics at [http://localhost:6006/](http://localhost:6006/) by default.
 
