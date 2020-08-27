@@ -47,7 +47,7 @@ Depending on the input config, the folder contains the semantic color maps and/o
 
 
 Additionally, we generate Tensorboard logs at `output/<timestamp>/tensorboard/`. These logs can be 
-examined after installing [Tensorboard](https://www.tensorflow.org/tensorboard):
+examined after installing Tensorboard
     
     pip install tensorboard 
 with the command:
