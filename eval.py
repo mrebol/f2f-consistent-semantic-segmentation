@@ -3,16 +3,12 @@ import yaml
 import argparse
 import torch
 from PIL import Image
-
 from torch.utils import data
 from datetime import datetime
-
 from data.cityscapes_loader import CityscapesLoader
 from data.metrics import RunningScore
 from utils.utils import *
 from model.esp_net import ESPNet_L1b
-
-
 
 
 def eval(val_loader, net, tensorboard, device, batch_nr_training, image_save_path, save_pred_color=False,

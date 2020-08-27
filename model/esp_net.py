@@ -15,7 +15,6 @@ class CBR(nn.Module):
 
     def __init__(self, nIn, nOut, kSize, stride=1):
         '''
-
         :param nIn: number of input channels
         :param nOut: number of output channels
         :param kSize: kernel size
