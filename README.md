@@ -42,14 +42,17 @@ To run the evaluation with the default config file located at `config/eval.yml` 
     python eval.py --config config/eval.yml 
 
 ## Results
-The results consist of the predicted semantic segmentation images and the Tensorboard logs. Both are stored in the `output` folder. 
+The predicted semantic segmentation images are saved in the `output/<timestamp>/images/` folder.
+Depending on the input config, the folder contains the semantic color maps and/or the semantic label ids.
 
-The generated tensorboard logs can be examined after installing [Tensorboard](https://www.tensorflow.org/tensorboard):
+
+Additionally, we generate Tensorboard logs at `output/<timestamp>/tensorboard/`. These logs can be 
+examined after installing [Tensorboard](https://www.tensorflow.org/tensorboard):
     
     pip install tensorboard 
 with the command:
 
     tensorboard --logdir output 
 
-Tensorboard displays the statistics at [http://localhost:6006/](http://localhost:6006/) by default.
+Tensorboard visualizes the statistics at [http://localhost:6006/](http://localhost:6006/) by default.
 
