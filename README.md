@@ -7,7 +7,9 @@ This code implements the method introduced in the publication [Frame-To-Frame Co
       title = {Frame-To-Frame Consistent Semantic Segmentation},
       booktitle = {Joint Austrian Computer Vision And Robotics Workshop (ACVRW)},
       month = {April},
-      year = {2020}
+      year = {2020},
+      pages = {79-86},
+      doi = {10.3217/978-3-85125-752-6-18}
     } 
     
 ![ESPNet vs our model](https://github.com/mrebol/f2fcss/blob/master/resources/esp_vs_our_model.gif)
